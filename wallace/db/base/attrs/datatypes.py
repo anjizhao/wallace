@@ -84,6 +84,8 @@ class UUID(String):
     def __set__(self, inst, val):
         if isinstance(val, uuid.UUID):
             val = val.hex
+        elif len(val) != 32:
+            val = uuid.UUID(val).hex
         super(UUID, self).__set__(inst, val)
 
 
