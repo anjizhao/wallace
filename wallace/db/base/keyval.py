@@ -38,13 +38,10 @@ class KeyValueModel(Model):
 
     @property
     def db_key(self):
-        if self.prefix:
-            return '%s:%s' % (self.prefix, self.ident,)
         return self.ident
 
 
     _create_new_ident = staticmethod(lambda: uuid.uuid4().hex)
-    prefix = None
 
 
     def push(self, *a, **kw):
