@@ -3,9 +3,9 @@ from wallace.db.base.errors import DoesNotExist, ValidationError
 from wallace.db.base.model import Base, Model
 
 
-class _PKBase(Base):
+class PKBase(Base):
     def __new__(cls, name, bases, dct):
-        the_class = super(_PKBase, cls).__new__(cls, name, bases, dct)
+        the_class = super(PKBase, cls).__new__(cls, name, bases, dct)
         the_class._cbs_primary_key_fields = cls._get_pk_fields(bases, dct)
 
         if cls._is_proper_model(bases):
@@ -34,9 +34,10 @@ class _PKBase(Base):
     def _is_proper_model(bases):
         # Model hierarchy:
         #     <model> -> <DB model wrapper (eg PostgresModel)> ->
-        #     RelationalModel -> Model -> object
+        #     ModelWithPK -> Model -> object
         # ergo, the hierarchy cardinality for any proper model subclass
         # will be at least 4
+        # (that is, check this isn't a base class)
 
         base_tree = []
         while bases:
@@ -47,14 +48,9 @@ class _PKBase(Base):
         return len(base_tree) > 3
 
 
-def throw_null_pk_field_error(attr):
-    msg = 'primary key field "%s" cannot be null' % attr
-    raise ValidationError(msg)
+class ModelWithPK(Model):
 
-
-class RelationalModel(Model):
-
-    __metaclass__ = _PKBase
+    __metaclass__ = PKBase
 
     @classmethod
     def fetch(cls, **kwargs):
@@ -65,16 +61,16 @@ class RelationalModel(Model):
 
     def pull(self):
         self._validate_pk()
-        return super(RelationalModel, self).pull()
+        super(ModelWithPK, self).pull()
 
     def push(self, *a, **kw):
         self._validate_pk()
-        return super(RelationalModel, self).push(*a, **kw)
+        super(ModelWithPK, self).push(*a, **kw)
 
     def _validate_pk(self):
         for attr in self._cbs_primary_key_fields:
             if getattr(self, attr, None) is None:
-                throw_null_pk_field_error(attr)
+                raise ValidationError('%s cannot be null' % attr)
 
 
     @property
@@ -91,5 +87,5 @@ class RelationalModel(Model):
             try:
                 pk[attr] = self._cbs_db_data[attr]
             except KeyError:
-                throw_null_pk_field_error(attr)
+                raise ValidationError('%s cannot be null' % attr)
         return pk

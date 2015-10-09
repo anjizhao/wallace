@@ -1,33 +1,47 @@
 from contextlib import contextmanager
 import uuid
 
+from wallace.db.base.attrs import UUID4
 from wallace.db.base.errors import DoesNotExist, ValidationError
 from wallace.db.base.model import Model
 
 
 class KeyValueModel(Model):
+    '''
+    Must declare a 'key' field for hand-created PK's,
+    or a 'key' property to combine other fields into the PK.
+
+    '''
+
+    @property
+    def key(self):
+        pass
 
     @classmethod
-    def fetch(cls, ident):
-        inst = cls()
-        inst._cbs_ident = ident
+    def fetch(cls, key=None, **kwargs):
+        inst = cls.construct(new=False, **kwargs)
+        if key:
+            inst._key_in_db = key
         inst.pull()
         return inst
 
     @classmethod
-    def construct(cls, ident=None, new=True, **kwargs):
-        if not new and ident is None:
-            raise ValidationError('must pass ident')
-
+    def construct(cls, key=None, new=True, **kwargs):
         inst = super(KeyValueModel, cls).construct(new=new, **kwargs)
+<<<<<<< Updated upstream
         inst._cbs_ident = ident
+=======
+        if key:
+            inst._key_in_db = key
+>>>>>>> Stashed changes
         return inst
 
     def __init__(self):
         Model.__init__(self)
-        self._cbs_ident = None
+        self._key_in_db = None
 
     @property
+<<<<<<< Updated upstream
     def ident(self):
         if self._cbs_ident is None:
             raise DoesNotExist('new model')
@@ -41,6 +55,12 @@ class KeyValueModel(Model):
     create_new_ident = staticmethod(lambda: uuid.uuid4().hex)
 
     def push(self, *args, **kwargs):
+=======
+    def key(self):
+        pass
+
+    def push(self, *a, **kw):
+>>>>>>> Stashed changes
         with self._new_model_key_handler():
             return super(KeyValueModel, self).push(*args, **kwargs)
 

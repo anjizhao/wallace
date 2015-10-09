@@ -1,7 +1,7 @@
 from contextlib import contextmanager
-
 from wallace.db.base.attrs import DataType
 from wallace.db.base.errors import DoesNotExist
+# from wallace.db.base.meta import Base
 
 
 class Base(type):
@@ -29,7 +29,6 @@ class Base(type):
                 defaults.pop(key)  # default but overridden without one here
 
         return tuple(defaults.items())
-
 
 class Model(object):
 

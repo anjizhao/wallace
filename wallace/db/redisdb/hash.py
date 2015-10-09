@@ -38,7 +38,7 @@ class RedisHash(KeyValueModel):
             pipe.execute()
 
     def _read_data(self):
-        return self.db.hgetall(self.db_key)
+        return self.db.hgetall(self.key)
 
     def _write_data(self, state, _, pipe=None):
         with self._pipe_state_mgr(pipe) as pipe:
