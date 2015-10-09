@@ -28,12 +28,7 @@ class KeyValueModel(Model):
     @classmethod
     def construct(cls, key=None, new=True, **kwargs):
         inst = super(KeyValueModel, cls).construct(new=new, **kwargs)
-<<<<<<< Updated upstream
         inst._cbs_ident = ident
-=======
-        if key:
-            inst._key_in_db = key
->>>>>>> Stashed changes
         return inst
 
     def __init__(self):
@@ -41,7 +36,6 @@ class KeyValueModel(Model):
         self._key_in_db = None
 
     @property
-<<<<<<< Updated upstream
     def ident(self):
         if self._cbs_ident is None:
             raise DoesNotExist('new model')
@@ -55,12 +49,6 @@ class KeyValueModel(Model):
     create_new_ident = staticmethod(lambda: uuid.uuid4().hex)
 
     def push(self, *args, **kwargs):
-=======
-    def key(self):
-        pass
-
-    def push(self, *a, **kw):
->>>>>>> Stashed changes
         with self._new_model_key_handler():
             return super(KeyValueModel, self).push(*args, **kwargs)
 
