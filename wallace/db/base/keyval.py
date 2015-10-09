@@ -20,10 +20,7 @@ class KeyValueModel(Model):
             raise ValidationError('must pass ident')
 
         inst = super(KeyValueModel, cls).construct(new=new, **kwargs)
-
-        if not new:
-            inst._cbs_ident = ident
-
+        inst._cbs_ident = ident
         return inst
 
     def __init__(self):
@@ -41,18 +38,21 @@ class KeyValueModel(Model):
         return self.ident
 
 
-    _create_new_ident = staticmethod(lambda: uuid.uuid4().hex)
+    create_new_ident = staticmethod(lambda: uuid.uuid4().hex)
 
-
-    def push(self, *a, **kw):
+    def push(self, *args, **kwargs):
         with self._new_model_key_handler():
-            super(KeyValueModel, self).push(*a, **kw)
+            return super(KeyValueModel, self).push(*args, **kwargs)
 
     @contextmanager
     def _new_model_key_handler(self):
+        if not self.is_new and self._cbs_ident is None:
+            msg = 'construction error, exists without an ident'
+            raise ValidationError(msg)
+
         reset_key_on_error = False
-        if self.is_new:
-            self._cbs_ident = self._create_new_ident()
+        if self._cbs_ident is None:
+            self._cbs_ident = self.create_new_ident()
             reset_key_on_error = True
 
         try:

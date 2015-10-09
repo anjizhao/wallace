@@ -6,38 +6,29 @@ from wallace.db.base.errors import DoesNotExist
 
 class Base(type):
     def __new__(cls, name, bases, dct):
-        # defaults = []
-        # for key, val in dct.items():
-        #     if isinstance(val, DataType):
-        #         val.attr = key
-        #         if val.default is not None:
-        #             defaults.append((key, val.default,))
-
-        defaults = cls._get_defaults(bases, dct)
+        for key, val in dct.iteritems():
+            if isinstance(val, DataType):
+                val.attr = key
 
         the_class = super(Base, cls).__new__(cls, name, bases, dct)
-        the_class._cbs_default_fields = tuple(defaults)
-
+        the_class._cbs_default_fields = cls._get_defaults(bases, dct)
         return the_class
 
     @staticmethod
     def _get_defaults(bases, dct):
         defaults = {}
 
-        for base in bases:
+        for base in bases:  # handle model inheritance
             for key, val in getattr(base, '_cbs_default_fields', []):
                 defaults[key] = val
 
         for key, val in dct.iteritems():
-            if isinstance(val, DataType):
-                val.attr = key
+            if isinstance(val, DataType) and val.default is not None:
+                defaults[key] = val.default
+            elif key in defaults:  # catch superclass fields declared with a
+                defaults.pop(key)  # default but overridden without one here
 
-                if val.default is not None:
-                    defaults[key] = val.default
-                elif key in defaults:
-                    defaults.pop(key)
-
-        return defaults.items()
+        return tuple(defaults.items())
 
 
 class Model(object):
@@ -81,6 +72,15 @@ class Model(object):
         return self._cbs_is_new
 
     @property
+    def is_modified(self):
+        if self._cbs_deleted or self._cbs_updated:
+            return True
+        return False
+
+    def is_attr_modified(self, attr):
+        return (attr in self._cbs_deleted or attr in self._cbs_updated)
+
+    @property
     def raw(self):
         data = dict(self._cbs_db_data)
         data.update(self._cbs_updated)
@@ -104,6 +104,10 @@ class Model(object):
     def _set_inbound_db_data(self, **kwargs):
         with self._guard_state_for_inbound_db_data():
             self._set_multiple_values(**kwargs)
+
+    def multiset(self, **kwargs):
+        self._set_multiple_values(**kwargs)
+        return self
 
 
     def _get_attr(self, attr):
@@ -145,6 +149,8 @@ class Model(object):
 
         self._set_inbound_db_data(**data)
 
+        return self
+
     def _read_data(self):
         raise NotImplementedError
 
@@ -152,6 +158,7 @@ class Model(object):
     def push(self, *a, **kw):
         with self._state_mgr_for_writes() as (state, changes,):
             self._write_data(state, changes, *a, **kw)
+        return self
 
     @contextmanager
     def _state_mgr_for_writes(self):
@@ -175,6 +182,7 @@ class Model(object):
     def rollback(self):
         self._cbs_deleted = set()
         self._cbs_updated = {}
+        return self
 
     def delete(self):
         raise NotImplementedError

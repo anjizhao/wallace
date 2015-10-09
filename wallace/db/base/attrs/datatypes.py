@@ -11,10 +11,10 @@ class Boolean(DataType):
     default = False
 
     @classmethod
-    def typecast(cls, val):
+    def typecast(cls, inst, val):
         if isinstance(val, basestring):
             return val == 'True' or val == 'true' or val == 't'
-        return super(Boolean, cls).typecast(val)
+        return super(Boolean, cls).typecast(inst, val)
 
 
 class ByteArray(DataType):
@@ -58,11 +58,19 @@ class JSON(String):
 
     def __get__(self, inst, owner):
         serialized = super(JSON, self).__get__(inst, owner)
-        return ujson.loads(serialized)
+        return ujson.loads(serialized) if serialized else serialized
 
-    def __set__(self, inst, val):
-        serialized = ujson.dumps(val)
-        super(JSON, self).__set__(inst, serialized)
+    @classmethod
+    def typecast(cls, inst, val):
+        if val and isinstance(val, basestring):
+            try:
+                val = ujson.loads(val)
+            except TypeError:
+                if inst._cbs_is_db_data_inbound:
+                    raise
+
+        val = ujson.dumps(val) if val else val
+        return super(JSON, cls).typecast(inst, val)
 
 
 
@@ -74,24 +82,28 @@ def is_uuid(val):
     return True
 
 
+def is_uuid4(val):
+    try:
+        val = uuid.UUID(val)
+    except ValueError:
+        return False
+    return val.version == 4
+
+
 class UUID(String):
 
-    validators = (
-        lambda val: len(val) == 32,
-        is_uuid,
-    )
+    validators = (is_uuid,)
 
-    def __set__(self, inst, val):
+    @classmethod
+    def typecast(cls, inst, val):
         if isinstance(val, uuid.UUID):
             val = val.hex
-        elif len(val) != 32:
+        else:
             val = uuid.UUID(val).hex
-        super(UUID, self).__set__(inst, val)
+
+        return super(UUID, cls).typecast(inst, val)
 
 
 class UUID4(UUID):
 
-    validators = (
-        lambda val: val[12] == '4',
-        lambda val: val[16] in ('8', '9', 'a', 'b',),
-    )
+    validators = (is_uuid4,)
