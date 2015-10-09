@@ -88,22 +88,9 @@ class Model(object):
             data[attr] = None
         return data
 
-
     def multiset(self, **kwargs):
         self._set_multiple_values(**kwargs)
         return self
-
-    def _set_inbound_db_data(self, **kwargs):
-        self._cbs_is_db_data_inbound = True
-        try:
-            self._set_multiple_values(**kwargs)
-        finally:
-            self._cbs_is_db_data_inbound = False
-
-    def _set_multiple_values(self, **kwargs):
-        for attr, val in kwargs.iteritems():
-            setattr(self, attr, val)
-
 
 
     def _get_attr(self, attr):
@@ -183,3 +170,15 @@ class Model(object):
     def delete(self):
         if self.is_new:
             raise DoesNotExist('new model')
+
+
+    def _set_inbound_db_data(self, **kwargs):
+        self._cbs_is_db_data_inbound = True
+        try:
+            self._set_multiple_values(**kwargs)
+        finally:
+            self._cbs_is_db_data_inbound = False
+
+    def _set_multiple_values(self, **kwargs):
+        for attr, val in kwargs.iteritems():
+            setattr(self, attr, val)
