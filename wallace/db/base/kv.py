@@ -124,7 +124,9 @@ class KeyValueModel(Model):
     def push(self, *a, **kw):
         super(KeyValueModel, self).push(*a, **kw)
         self._key_in_db = self.key
+        return self
 
     def pull(self):
         super(KeyValueModel, self).pull()
         self._key_in_db = self.key
+        return self
