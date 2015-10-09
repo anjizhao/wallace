@@ -7,28 +7,24 @@ from wallace.db.base.errors import DoesNotExist
 
 class Key(object):
 
-    default = lambda: uuid.uuid4().hex
-
     def __get__(self, inst, _):
-        if inst.is_new:
+        if inst._new_key:
             return inst._new_key
 
-        # if inst._key_in_db != inst._new_key:
-
+        if inst.is_new:
+            inst._new_key = uuid.uuid4().hex
+            return inst._new_key
 
         if inst._key_in_db:
             return inst._key_in_db
-        else:
-            raise ValidationError('no current key')
+
+        raise ValidationError('no key has been set')
 
     def __set__(self, inst, val):
         inst._new_key = val
 
     def __delete__(self, inst):
-        if inst.is_new:
-            inst._new_key = None
-        else:
-            inst._key_in_db = None
+        inst._new_key = None
 
 
 class ComposedKey(object):
@@ -112,6 +108,7 @@ class KeyValueModel(Model):
 
     def __init__(self):
         super(KeyValueModel, self).__init__()
+        self._new_key = ''  # used only by the Key descriptor
         self._key_in_db = ''
 
     @property
