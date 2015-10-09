@@ -41,7 +41,7 @@ class MongoCollection(object):
         cls.collection.save(data)
 
     @classmethod
-    def delete(cls, ident):
-        if not ident:           # `remove` drops all documents in the
+    def delete(cls, key):
+        if not key:             # `remove` drops all documents in the
             raise DoesNotExist  # collection if `spec_or_id` is None
-        cls.collection.remove(spec_or_id=ident, multi=False)
+        cls.collection.remove(spec_or_id=key, multi=False)
