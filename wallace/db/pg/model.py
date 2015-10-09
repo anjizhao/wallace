@@ -21,10 +21,10 @@ class PostgresModel(RelationalModel):
         return map(lambda row: cls.construct(new=False, **row), rows)
 
 
-    def _read_data(self):
+    def read_db_data(self):
         return self.table.fetchone(**self.primary_key)
 
-    def _write_data(self, state, changes):
+    def write_db_data(self, state, changes):
         if self.is_new:
             self.table.add(**state)
         else:
@@ -32,6 +32,5 @@ class PostgresModel(RelationalModel):
 
 
     def delete(self):
-        if not self.primary_key:
-            raise DoesNotExist
+        super(PostgresModel, self).delete()
         self.table.delete(**self.primary_key)

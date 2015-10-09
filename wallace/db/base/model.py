@@ -30,6 +30,7 @@ class Base(type):
 
         return tuple(defaults.items())
 
+
 class Model(object):
 
     __metaclass__ = Base
@@ -88,11 +89,14 @@ class Model(object):
         return data
 
 
-    @contextmanager
-    def _guard_state_for_inbound_db_data(self):
+    def multiset(self, **kwargs):
+        self._set_multiple_values(**kwargs)
+        return self
+
+    def _set_inbound_db_data(self, **kwargs):
         self._cbs_is_db_data_inbound = True
         try:
-            yield
+            self._set_multiple_values(**kwargs)
         finally:
             self._cbs_is_db_data_inbound = False
 
@@ -100,13 +104,6 @@ class Model(object):
         for attr, val in kwargs.iteritems():
             setattr(self, attr, val)
 
-    def _set_inbound_db_data(self, **kwargs):
-        with self._guard_state_for_inbound_db_data():
-            self._set_multiple_values(**kwargs)
-
-    def multiset(self, **kwargs):
-        self._set_multiple_values(**kwargs)
-        return self
 
 
     def _get_attr(self, attr):
@@ -138,11 +135,11 @@ class Model(object):
             self._cbs_deleted.add(attr)
 
 
-    def pull(self):
+    def pull(self, *a, **kw):
         if self._cbs_is_new:
             raise DoesNotExist('new record, push first')
 
-        data = self._read_data()
+        data = self.read_db_data(*a, **kw)
         if not data:
             raise DoesNotExist
 
@@ -150,17 +147,17 @@ class Model(object):
 
         return self
 
-    def _read_data(self):
+    def read_db_data(self, *a, **kw):
         raise NotImplementedError
 
 
     def push(self, *a, **kw):
-        with self._state_mgr_for_writes() as (state, changes,):
-            self._write_data(state, changes, *a, **kw)
+        with self._protect_internal_state() as (state, changes,):
+            self.write_db_data(state, changes, *a, **kw)
         return self
 
     @contextmanager
-    def _state_mgr_for_writes(self):
+    def _protect_internal_state(self):
         state = dict(self._cbs_db_data)
         state.update(self._cbs_updated)
         changes = dict(self._cbs_updated)
@@ -174,7 +171,7 @@ class Model(object):
         self._cbs_is_new = False
         self.rollback()
 
-    def _write_data(self, state, changes, *a, **kw):
+    def write_db_data(self, state, changes, *a, **kw):
         raise NotImplementedError
 
 
@@ -184,4 +181,5 @@ class Model(object):
         return self
 
     def delete(self):
-        raise NotImplementedError
+        if self.is_new:
+            raise DoesNotExist('new model')

@@ -71,6 +71,11 @@ class RelationalModel(Model):
         self._validate_pk()
         return super(RelationalModel, self).push(*a, **kw)
 
+    def delete(self):
+        super(RelationalModel, self).delete()
+        if not self.primary_key:
+            raise DoesNotExist
+
     def _validate_pk(self):
         for attr in self._cbs_primary_key_fields:
             if getattr(self, attr, None) is None:
@@ -80,7 +85,7 @@ class RelationalModel(Model):
     @property
     def primary_key(self):
         # The primary key CURRENTLY stored in the db.
-        # If a pk field is changed, this will continue to return the old
+        # If a pk field is changed, this will return the old
         # value so updates can find the row.
 
         if self.is_new:

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from wallace.config import GetDBConn
-from wallace.db.base import KeyValueModel, DoesNotExist
+from wallace.db.base import KeyValueModel
 
 
 class RedisHash(KeyValueModel):
@@ -10,22 +10,33 @@ class RedisHash(KeyValueModel):
     db_name = None
 
     @classmethod
-    def fetch_many(cls, *keys):
+    def fetch_many(cls, *items):
+        instances = []
         with cls.db.pipeline() as pipe:
-            for key in keys:
-                pipe.hgetall(key)
-            data = pipe.execute()
+            for attrs in items:
+                inst = cls.construct(new=False, **attrs)
+                inst.pull(pipe=pipe)
+                instances.append(inst)
 
-        items = []
-        for idx, attrs in enumerate(data):
-            inst = cls.construct(key=keys[idx], new=False, **attrs)
-            items.append(inst)
+        return instances
 
-        return items
+    def read_db_data(self, pipe=None):
+        with self._db_conn_manager(pipe) as pipe:
+            return pipe.hgetall(self.key)
 
+    def write_db_data(self, state, _, pipe=None):
+        with self._db_conn_manager(pipe) as pipe:
+            pipe.delete(self.key_in_db)  # delete first to clear deleted fields
+            pipe.hmset(self.key, state)  # and clean up orphans
+
+    def delete(self, pipe=None):
+        super(RedisHash, self).delete()
+
+        with self._db_conn_manager(pipe) as pipe:
+            pipe.delete(self.key_in_db)
 
     @contextmanager
-    def _pipe_state_mgr(self, pipe=None):
+    def _db_conn_manager(self, pipe=None):
         if pipe is None:
             pipe = self.db.pipeline()
             execute = True
@@ -37,27 +48,12 @@ class RedisHash(KeyValueModel):
         if execute:
             pipe.execute()
 
-    def _read_data(self):
-        return self.db.hgetall(self.key)
-
-    def _write_data(self, state, _, pipe=None):
-        with self._pipe_state_mgr(pipe) as pipe:
-            pipe.delete(self.key_in_db)  # delete first to clear deleted fields
-            pipe.hmset(self.key, state)  # and clean up orphans
-
-    def delete(self, pipe=None):
-        if not self.key_in_db:
-            raise DoesNotExist
-
-        with self._pipe_state_mgr(pipe) as pipe:
-            pipe.delete(self.key_in_db)
-
 
 class ExpiringRedisHash(RedisHash):
 
     ttl = 10 * 60
 
-    def _write_data(self, state, _, pipe=None):
-        with self._pipe_state_mgr(pipe) as pipe:
-            super(ExpiringRedisHash, self)._write_data(state, _, pipe=pipe)
+    def write_db_data(self, state, _, pipe=None):
+        with self._db_conn_manager(pipe) as pipe:
+            super(ExpiringRedisHash, self).write_db_data(state, _, pipe=pipe)
             pipe.expire(self.key_in_db, self.ttl)

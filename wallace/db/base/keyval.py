@@ -126,7 +126,12 @@ class KeyValueModel(Model):
         self._key_in_db = self.key
         return self
 
-    def pull(self):
-        super(KeyValueModel, self).pull()
+    def pull(self, *a, **kw):
+        super(KeyValueModel, self).pull(*a, **kw)
         self._key_in_db = self.key
         return self
+
+    def delete(self):
+        super(KeyValueModel, self).delete()
+        if not self.key_in_db:
+            raise DoesNotExist
