@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 from wallace.db.base.attrs import DataType
 from wallace.db.base.errors import DoesNotExist
-# from wallace.db.base.meta import Base
 
 
 class Base(type):
