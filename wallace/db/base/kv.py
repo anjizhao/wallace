@@ -37,13 +37,16 @@ class ComposedKey(object):
     def _format_key(self, inst):
         fields = list(inst._cbs_primary_key_fields)
         fields.sort()
+
         values = [getattr(inst, f) for f in fields]
         if values.count(None):
             raise ValidationError('%s cannot be null' % 'foo')
+
         return '|'.join(values)
 
 
-class KVBase(Base):
+class KeyValueBase(Base):
+
     def __new__(cls, name, bases, dct):
         pk_fields = cls._get_pk_fields(bases, dct)
         key = dct.get('key')
@@ -54,10 +57,9 @@ class KVBase(Base):
             else:
                 dct['key'] = Key()
 
-        the_class = super(KVBase, cls).__new__(cls, name, bases, dct)
+        the_class = super(KeyValueBase, cls).__new__(cls, name, bases, dct)
         the_class._cbs_primary_key_fields = pk_fields
         return the_class
-
 
     @staticmethod
     def _get_pk_fields(bases, dct):
@@ -95,7 +97,7 @@ class KVBase(Base):
 
 class KeyValueModel(Model):
 
-    __metaclass__ = KVBase
+    __metaclass__ = KeyValueBase
 
     @classmethod
     def fetch(cls, key=None, **kwargs):

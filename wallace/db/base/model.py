@@ -148,8 +148,6 @@ class Model(object):
 
         self._set_inbound_db_data(**data)
 
-        return self
-
     def _read_data(self):
         raise NotImplementedError
 
