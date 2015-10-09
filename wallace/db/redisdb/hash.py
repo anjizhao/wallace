@@ -10,15 +10,15 @@ class RedisHash(KeyValueModel):
     db_name = None
 
     @classmethod
-    def fetch_many(cls, *idents):
+    def fetch_many(cls, *keys):
         with cls.db.pipeline() as pipe:
-            for ident in idents:
-                pipe.hgetall(ident)
+            for key in keys:
+                pipe.hgetall(key)
             data = pipe.execute()
 
         items = []
         for idx, attrs in enumerate(data):
-            inst = cls.construct(ident=idents[idx], new=False, **attrs)
+            inst = cls.construct(key=keys[idx], new=False, **attrs)
             items.append(inst)
 
         return items
@@ -42,15 +42,15 @@ class RedisHash(KeyValueModel):
 
     def _write_data(self, state, _, pipe=None):
         with self._pipe_state_mgr(pipe) as pipe:
-            pipe.delete(self.db_key)        # delete first to
-            pipe.hmset(self.db_key, state)  # clear deleted fields
+            pipe.delete(self.key_in_db)  # delete first to clear deleted fields
+            pipe.hmset(self.key, state)  # and clean up orphans
 
     def delete(self, pipe=None):
-        if not self.db_key:
+        if not self.key_in_db:
             raise DoesNotExist
 
         with self._pipe_state_mgr(pipe) as pipe:
-            pipe.delete(self.db_key)
+            pipe.delete(self.key_in_db)
 
 
 class ExpiringRedisHash(RedisHash):
@@ -60,4 +60,4 @@ class ExpiringRedisHash(RedisHash):
     def _write_data(self, state, _, pipe=None):
         with self._pipe_state_mgr(pipe) as pipe:
             super(ExpiringRedisHash, self)._write_data(state, _, pipe=pipe)
-            pipe.expire(self.db_key, self.ttl)
+            pipe.expire(self.key_in_db, self.ttl)
