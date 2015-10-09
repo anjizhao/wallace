@@ -56,4 +56,4 @@ class ExpiringRedisHash(RedisHash):
     def write_db_data(self, state, _, pipe=None):
         with self._db_conn_manager(pipe) as pipe:
             super(ExpiringRedisHash, self).write_db_data(state, _, pipe=pipe)
-            pipe.expire(self.key_in_db, self.ttl)
+            pipe.expire(self.key, self.ttl)

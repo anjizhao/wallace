@@ -34,6 +34,10 @@ class ComposedKey(object):
         return self._format_key(inst)
 
     def _format_key(self, inst):
+        for attr in inst._cbs_primary_key_fields:
+            if getattr(inst, attr, None) is None:
+                raise ValidationError('%s cannot be null' % attr)
+
         fields = list(inst._cbs_primary_key_fields)
         fields.sort()
 
