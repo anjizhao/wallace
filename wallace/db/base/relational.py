@@ -1,50 +1,18 @@
-from wallace.db.base.attrs import DataType
 from wallace.db.base.errors import DoesNotExist, ValidationError
 from wallace.db.base.model import Base, Model
+from wallace.db.base.utils import is_not_base_model, get_primary_key_fields
 
 
 class _PKBase(Base):
     def __new__(cls, name, bases, dct):
         the_class = super(_PKBase, cls).__new__(cls, name, bases, dct)
-        the_class._cbs_primary_key_fields = cls._get_pk_fields(bases, dct)
+        the_class._cbs_primary_key_fields = get_primary_key_fields(bases, dct)
 
-        if cls._is_proper_model(bases):
+        if is_not_base_model(bases):
             if not the_class._cbs_primary_key_fields:
                 raise TypeError('no primary keys set')
 
         return the_class
-
-    @staticmethod
-    def _get_pk_fields(bases, dct):
-        pk_fields = set()
-
-        for base in bases:  # support model inheritance
-            for key in getattr(base, '_cbs_primary_key_fields', []):
-                pk_fields.add(key)
-
-        for key, val in dct.iteritems():
-            if isinstance(val, DataType) and val.is_pk:
-                pk_fields.add(key)
-            elif key in pk_fields:      # catch any superclass pk fields
-                pk_fields.remove(key)   # overridden here by a non-pk one
-
-        return tuple(pk_fields)
-
-    @staticmethod
-    def _is_proper_model(bases):
-        # Model hierarchy:
-        #     <model> -> <DB model wrapper (eg PostgresModel)> ->
-        #     RelationalModel -> Model -> object
-        # ergo, the hierarchy cardinality for any proper model subclass
-        # will be at least 4
-
-        base_tree = []
-        while bases:
-            base_tree.append(bases)
-            bases = map(lambda b: list(b.__bases__), bases)
-            bases = sum(bases, [])
-
-        return len(base_tree) > 3
 
 
 def throw_null_pk_field_error(attr):

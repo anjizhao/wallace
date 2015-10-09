@@ -1,8 +1,7 @@
 import uuid
-from wallace.db.base.attrs import DataType
-from wallace.db.base.errors import ValidationError
+from wallace.db.base.errors import DoesNotExist, ValidationError
 from wallace.db.base.model import Base, Model
-from wallace.db.base.errors import DoesNotExist
+from wallace.db.base.utils import get_primary_key_fields
 
 
 class Key(object):
@@ -48,7 +47,7 @@ class ComposedKey(object):
 class KeyValueBase(Base):
 
     def __new__(cls, name, bases, dct):
-        pk_fields = cls._get_pk_fields(bases, dct)
+        pk_fields = get_primary_key_fields(bases, dct)
         key = dct.get('key')
 
         if not key:
@@ -60,39 +59,6 @@ class KeyValueBase(Base):
         the_class = super(KeyValueBase, cls).__new__(cls, name, bases, dct)
         the_class._cbs_primary_key_fields = pk_fields
         return the_class
-
-    @staticmethod
-    def _get_pk_fields(bases, dct):
-        pk_fields = set()
-
-        for base in bases:  # support model inheritance
-            for key in getattr(base, '_cbs_primary_key_fields', []):
-                pk_fields.add(key)
-
-        for key, val in dct.iteritems():
-            if isinstance(val, DataType) and val.is_pk:
-                pk_fields.add(key)
-            elif key in pk_fields:      # catch any superclass pk fields
-                pk_fields.remove(key)   # overridden here by a non-pk one
-
-        return tuple(pk_fields)
-
-    @staticmethod
-    def _is_proper_model(bases):
-        # Model hierarchy:
-        #     <model> -> <DB model wrapper (eg PostgresModel)> ->
-        #     Model -> Model -> object
-        # ergo, the hierarchy cardinality for any proper model subclass
-        # will be at least 4
-        # (that is, check this isn't a base class)
-
-        base_tree = []
-        while bases:
-            base_tree.append(bases)
-            bases = map(lambda b: list(b.__bases__), bases)
-            bases = sum(bases, [])
-
-        return len(base_tree) > 3
 
 
 class KeyValueModel(Model):
