@@ -30,7 +30,7 @@ def is_default_valid(default, cast_func, validators):
 
     if cast_func:
         if not isinstance(default, cast_func):
-            msg = 'default `%s` not a %s' % (default, cast_func.__name__,)
+            msg = 'default not a %s' % cast_func.__name__
             raise ValidationError(msg)
 
     for func in validators:
