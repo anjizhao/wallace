@@ -1,4 +1,4 @@
-from wallace.config.ns import get_app
+from wallace.config.app import get_app
 
 
 class GetApp(object):
@@ -11,7 +11,7 @@ class GetDBConn(object):
     app = GetApp()
 
     def __get__(self, inst, owner):
-        return self.app.get_db_conn(owner.db_name)
+        return self.app.get_connection(owner.db_name)
 
 
 class GetParameter(object):
