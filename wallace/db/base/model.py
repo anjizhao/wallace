@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+
 from wallace.db.base.attrs import DataType
 from wallace.db.base.errors import DoesNotExist
 
