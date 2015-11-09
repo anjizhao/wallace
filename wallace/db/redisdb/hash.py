@@ -20,11 +20,11 @@ class RedisHash(KeyValueModel):
 
         return instances
 
-    def read_db_data(self, pipe=None):
+    def read_from_db(self, pipe=None):
         with self._db_conn_manager(pipe) as pipe:
             return pipe.hgetall(self.key)
 
-    def write_db_data(self, state, _, pipe=None):
+    def write_to_db(self, state, _, pipe=None):
         with self._db_conn_manager(pipe) as pipe:
             pipe.delete(self.key_in_db)  # delete first to clear deleted fields
             pipe.hmset(self.key, state)  # and clean up orphans
@@ -53,7 +53,7 @@ class ExpiringRedisHash(RedisHash):
 
     ttl = 10 * 60
 
-    def write_db_data(self, state, _, pipe=None):
+    def write_to_db(self, state, _, pipe=None):
         with self._db_conn_manager(pipe) as pipe:
-            super(ExpiringRedisHash, self).write_db_data(state, _, pipe=pipe)
+            super(ExpiringRedisHash, self).write_to_db(state, _, pipe=pipe)
             pipe.expire(self.key, self.ttl)

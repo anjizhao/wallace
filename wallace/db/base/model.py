@@ -126,7 +126,7 @@ class Model(object):
         if self._cbs_is_new:
             raise DoesNotExist('new record, push first')
 
-        data = self.read_db_data(*a, **kw)
+        data = self.read_from_db(*a, **kw)
         if not data:
             raise DoesNotExist
 
@@ -134,13 +134,13 @@ class Model(object):
 
         return self
 
-    def read_db_data(self, *a, **kw):
+    def read_from_db(self, *a, **kw):
         raise NotImplementedError
 
 
     def push(self, *a, **kw):
         with self._protect_internal_state() as (state, changes,):
-            self.write_db_data(state, changes, *a, **kw)
+            self.write_to_db(state, changes, *a, **kw)
         return self
 
     @contextmanager
@@ -158,7 +158,7 @@ class Model(object):
         self._cbs_is_new = False
         self.rollback()
 
-    def write_db_data(self, state, changes, *a, **kw):
+    def write_to_db(self, state, changes, *a, **kw):
         raise NotImplementedError
 
 

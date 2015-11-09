@@ -29,13 +29,13 @@ class MongoDocument(KeyValueModel):
         return f(**kwargs)
 
 
-    def read_db_data(self):
+    def read_from_db(self):
         data = self.collection.fetchone(_id=self.key)
         if data:
             data.pop('_id', None)
         return data
 
-    def write_db_data(self, state, _):
+    def write_to_db(self, state, _):
         f = self.collection.add if self.is_new else self.collection.update
         f(_id=self.key, **state)
 

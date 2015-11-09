@@ -21,10 +21,10 @@ class PostgresModel(RelationalModel):
         return map(lambda row: cls.construct(new=False, **row), rows)
 
 
-    def read_db_data(self):
+    def read_from_db(self):
         return self.table.fetchone(**self.primary_key)
 
-    def write_db_data(self, state, changes):
+    def write_to_db(self, state, changes):
         if self.is_new:
             self.table.add(**state)
         else:
