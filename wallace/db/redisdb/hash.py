@@ -17,6 +17,7 @@ class RedisHash(KeyValueModel):
                 inst = cls.construct(new=False, **attrs)
                 inst.pull(pipe=pipe)
                 instances.append(inst)
+            pipe.execute()  # todo - test
 
         return instances
 
